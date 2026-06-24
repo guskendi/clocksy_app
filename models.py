@@ -16,6 +16,7 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     reset_token = db.Column(db.String(255), nullable=True)
     reset_token_expires = db.Column(db.DateTime, nullable=True)
+    must_change_password = db.Column(db.Boolean, default=False)
 
     config = db.relationship('UserConfig', backref='user', uselist=False, cascade='all, delete-orphan')
     records = db.relationship('DayRecord', backref='user', cascade='all, delete-orphan')

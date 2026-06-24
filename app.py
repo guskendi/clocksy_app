@@ -50,6 +50,8 @@ def login():
             login_user(user, remember=True)
             if user.is_admin:
                 return redirect(url_for('admin_dashboard'))
+            if user.must_change_password:
+                return redirect(url_for('change_password'))
             return redirect(url_for('registro'))
         flash('E-mail ou senha incorretos.', 'error')
     return render_template('login.html')
@@ -96,6 +98,31 @@ def reset_password(token):
             flash('Senha redefinida com sucesso!', 'success')
             return redirect(url_for('login'))
     return render_template('reset_password.html', token=token)
+
+
+# ─── TROCA DE SENHA OBRIGATÓRIA ──────────────────────────────────────────────
+
+@app.route('/change-password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    if not current_user.must_change_password:
+        return redirect(url_for('registro'))
+    if request.method == 'POST':
+        pw = request.form.get('password', '')
+        pw2 = request.form.get('password2', '')
+        if len(pw) < 6:
+            flash('A senha deve ter pelo menos 6 caracteres.', 'error')
+        elif pw != pw2:
+            flash('As senhas não coincidem.', 'error')
+        elif pw == '12345':
+            flash('Escolha uma senha diferente da senha padrão.', 'error')
+        else:
+            current_user.set_password(pw)
+            current_user.must_change_password = False
+            db.session.commit()
+            flash('Senha alterada com sucesso!', 'success')
+            return redirect(url_for('registro'))
+    return render_template('change_password.html')
 
 
 # ─── USUÁRIO — REGISTRO ───────────────────────────────────────────────────────
@@ -426,20 +453,19 @@ def admin_new_user():
     if request.method == 'POST':
         name = request.form.get('name','').strip()
         email = request.form.get('email','').strip().lower()
-        password = request.form.get('password','')
-        if not name or not email or not password:
-            flash('Preencha todos os campos.', 'error')
+        if not name or not email:
+            flash('Preencha nome e e-mail.', 'error')
         elif User.query.filter_by(email=email).first():
             flash('E-mail já cadastrado.', 'error')
         else:
-            u = User(name=name, email=email, is_admin=False)
-            u.set_password(password)
+            u = User(name=name, email=email, is_admin=False, must_change_password=True)
+            u.set_password('12345')
             db.session.add(u)
             db.session.flush()
             cfg = UserConfig(user_id=u.id)
             db.session.add(cfg)
             db.session.commit()
-            flash(f'Usuário {name} criado!', 'success')
+            flash(f'Usuário {name} criado! Senha padrão: 12345', 'success')
             return redirect(url_for('admin_dashboard'))
     return render_template('admin/user_form.html', user=None)
 

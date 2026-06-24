@@ -50,6 +50,9 @@
           {% else %}
             <span class="badge badge-gray">Inativo</span>
           {% endif %}
+          {% if u.must_change_password %}
+            <span class="badge badge-amber" style="margin-left:4px">Senha padrão</span>
+          {% endif %}
         </td>
         <td>
           <div style="display:flex;gap:6px;justify-content:flex-end">

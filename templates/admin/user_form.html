@@ -26,11 +26,16 @@
         <input type="email" name="email" class="form-input"
           value="{{ user.email if user else '' }}" required placeholder="email@exemplo.com">
       </div>
+      {% if user %}
       <div class="form-group">
-        <label class="form-label">Senha {% if user %}<span style="color:var(--text3)">(deixe em branco para manter a atual)</span>{% endif %}</label>
-        <input type="password" name="password" class="form-input"
-          placeholder="Mínimo 6 caracteres" {{ 'required' if not user }}>
+        <label class="form-label">Nova senha <span style="color:var(--text3)">(deixe em branco para manter a atual)</span></label>
+        <input type="password" name="password" class="form-input" placeholder="Mínimo 6 caracteres">
       </div>
+      {% else %}
+      <div class="form-group" style="background:var(--amber-bg);border-radius:var(--radius-sm);padding:10px 14px">
+        <p style="font-size:13px;color:var(--amber)">O usuário receberá a senha padrão <strong>12345</strong> e será solicitado a alterá-la no primeiro login.</p>
+      </div>
+      {% endif %}
       {% if user %}
       <div class="form-group">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
