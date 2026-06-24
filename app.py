@@ -160,7 +160,9 @@ def registro():
         worked_mins = None
         balance_mins = None
         if rec and rec.entry_time and rec.exit_time and jtype not in ABSENCE_TYPES[:4]:
-            worked_mins = calc_worked_minutes(rec.entry_time, rec.exit_time, cfg['lunch_minutes'])
+            worked_mins = calc_worked_minutes(rec.entry_time, rec.exit_time, cfg['lunch_minutes'],
+                                              getattr(rec, 'lunch_out_time', None),
+                                              getattr(rec, 'lunch_in_time', None))
             if worked_mins is not None:
                 balance_mins = worked_mins - target_mins
 
@@ -251,6 +253,10 @@ def save_record():
 
     if 'entry_time' in data:
         rec.entry_time = data['entry_time'] or None
+    if 'lunch_out_time' in data:
+        rec.lunch_out_time = data['lunch_out_time'] or None
+    if 'lunch_in_time' in data:
+        rec.lunch_in_time = data['lunch_in_time'] or None
     if 'exit_time' in data:
         rec.exit_time = data['exit_time'] or None
     if 'confirmed' in data:
@@ -273,7 +279,8 @@ def save_record():
     worked_mins = None
     balance_mins = None
     if rec.entry_time and rec.exit_time:
-        worked_mins = calc_worked_minutes(rec.entry_time, rec.exit_time, cfg['lunch_minutes'])
+        worked_mins = calc_worked_minutes(rec.entry_time, rec.exit_time, cfg['lunch_minutes'],
+                                          rec.lunch_out_time, rec.lunch_in_time)
         if worked_mins is not None:
             balance_mins = worked_mins - target_mins
 
@@ -350,7 +357,9 @@ def resumo():
         worked_mins = None
         balance_mins = None
         if rec.entry_time and rec.exit_time and jtype not in ('holiday','overtime_use','sick_day','other_absence'):
-            worked_mins = calc_worked_minutes(rec.entry_time, rec.exit_time, cfg['lunch_minutes'])
+            worked_mins = calc_worked_minutes(rec.entry_time, rec.exit_time, cfg['lunch_minutes'],
+                                              getattr(rec, 'lunch_out_time', None),
+                                              getattr(rec, 'lunch_in_time', None))
             if worked_mins is not None:
                 balance_mins = worked_mins - target_mins
         day_rows.append({

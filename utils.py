@@ -87,12 +87,30 @@ def get_day_default_schedule(weekday, cfg):
         return schedules[key].get('entry','08:00'), schedules[key].get('exit','18:00')
     return '08:00', '18:00'
 
-def calc_worked_minutes(entry, exit_t, lunch_minutes):
+def calc_worked_minutes(entry, exit_t, lunch_minutes, lunch_out=None, lunch_in=None):
+    """
+    Calcula minutos trabalhados.
+    Se lunch_out e lunch_in fornecidos: (saída_almoço - entrada) + (saída - retorno_almoço)
+    Caso contrário: (saída - entrada) - lunch_minutes
+    """
     e = time_to_minutes(entry)
     s = time_to_minutes(exit_t)
     if e is None or s is None or s <= e:
         return None
-    return (s - e) - lunch_minutes
+
+    lo = time_to_minutes(lunch_out)
+    li = time_to_minutes(lunch_in)
+
+    if lo is not None and li is not None and li > lo:
+        # Período manhã + período tarde
+        morning = lo - e
+        afternoon = s - li
+        if morning < 0 or afternoon < 0:
+            return None
+        return morning + afternoon
+    else:
+        # Fallback: desconta intervalo fixo
+        return (s - e) - lunch_minutes
 
 def compute_month_summary(user, year, month, records_map, cfg, up_to_today=False, today=None):
     """
@@ -146,7 +164,9 @@ def compute_month_summary(user, year, month, records_map, cfg, up_to_today=False
         total_target_mins += target
 
         if rec and rec.entry_time and rec.exit_time:
-            worked = calc_worked_minutes(rec.entry_time, rec.exit_time, cfg['lunch_minutes'])
+            worked = calc_worked_minutes(rec.entry_time, rec.exit_time, cfg['lunch_minutes'],
+                                         getattr(rec, 'lunch_out_time', None),
+                                         getattr(rec, 'lunch_in_time', None))
             if worked is not None:
                 total_worked_mins += worked
                 days_logged += 1

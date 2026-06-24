@@ -46,8 +46,10 @@ class DayRecord(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     record_date = db.Column(db.Date, nullable=False)
-    entry_time = db.Column(db.String(5), nullable=True)   # HH:MM
-    exit_time = db.Column(db.String(5), nullable=True)    # HH:MM
+    entry_time = db.Column(db.String(5), nullable=True)        # HH:MM
+    lunch_out_time = db.Column(db.String(5), nullable=True)   # HH:MM saída almoço
+    lunch_in_time = db.Column(db.String(5), nullable=True)    # HH:MM retorno almoço
+    exit_time = db.Column(db.String(5), nullable=True)        # HH:MM
     confirmed = db.Column(db.Boolean, default=False)
     # justificativa de ausência ou saída antecipada
     justification_type = db.Column(db.String(50), nullable=True)

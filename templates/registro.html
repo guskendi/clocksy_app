@@ -190,7 +190,17 @@
           <input type="time" id="entry-{{ date_str }}"
             value="{{ d.record.entry_time if d.record and d.record.entry_time else d.default_entry }}"
             onchange="saveTime('{{ date_str }}', 'entry_time', this.value)">
-          <label style="min-width:36px;text-align:right">Saída</label>
+          <label style="min-width:56px;text-align:right">Saí. alm.</label>
+          <input type="time" id="lunch_out-{{ date_str }}"
+            value="{{ d.record.lunch_out_time if d.record and d.record.lunch_out_time else '' }}"
+            onchange="saveTime('{{ date_str }}', 'lunch_out_time', this.value)">
+        </div>
+        <div class="time-row">
+          <label>Retorno</label>
+          <input type="time" id="lunch_in-{{ date_str }}"
+            value="{{ d.record.lunch_in_time if d.record and d.record.lunch_in_time else '' }}"
+            onchange="saveTime('{{ date_str }}', 'lunch_in_time', this.value)">
+          <label style="min-width:56px;text-align:right">Saída</label>
           <input type="time" id="exit-{{ date_str }}"
             value="{{ d.record.exit_time if d.record and d.record.exit_time else d.default_exit }}"
             onchange="saveTime('{{ date_str }}', 'exit_time', this.value)">

@@ -430,17 +430,27 @@ async function removeJustification() {
 }
 
 function getCardTimes(dateStr) {
-  const entry = document.getElementById('entry-' + dateStr);
-  const exit  = document.getElementById('exit-'  + dateStr);
+  const entry     = document.getElementById('entry-'     + dateStr);
+  const lunch_out = document.getElementById('lunch_out-' + dateStr);
+  const lunch_in  = document.getElementById('lunch_in-'  + dateStr);
+  const exit      = document.getElementById('exit-'      + dateStr);
   return {
-    entry: entry ? entry.value : null,
-    exit:  exit  ? exit.value  : null
+    entry:     entry     ? entry.value     : null,
+    lunch_out: lunch_out ? lunch_out.value : null,
+    lunch_in:  lunch_in  ? lunch_in.value  : null,
+    exit:      exit      ? exit.value      : null,
   };
 }
 
 async function saveTime(dateStr, field, value) {
   const times = getCardTimes(dateStr);
-  const body = { date: dateStr, entry_time: times.entry, exit_time: times.exit };
+  const body = {
+    date: dateStr,
+    entry_time:     times.entry,
+    lunch_out_time: times.lunch_out,
+    lunch_in_time:  times.lunch_in,
+    exit_time:      times.exit
+  };
   body[field] = value;
   const res = await fetch('/api/record', {
     method: 'POST',
@@ -459,8 +469,10 @@ async function toggleConfirm(dateStr, btn) {
   const body = {
     date: dateStr,
     confirmed: !isConfirmed,
-    entry_time: times.entry,
-    exit_time: times.exit
+    entry_time:     times.entry,
+    lunch_out_time: times.lunch_out,
+    lunch_in_time:  times.lunch_in,
+    exit_time:      times.exit
   };
   const res = await fetch('/api/record', {
     method: 'POST',
