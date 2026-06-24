@@ -1,5 +1,59 @@
 {% extends 'base.html' %}
 {% block title %}Configurações — Clocksy{% endblock %}
+
+{% block head %}
+<style>
+/* Layout mobile para linhas de dia */
+.day-row {
+  padding: 10px 0;
+  border-bottom: 0.5px solid var(--border);
+}
+.day-row:last-child { border-bottom: none; }
+
+.day-row-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.day-row-top input[type=checkbox] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.day-row-top label {
+  font-size: 14px;
+  cursor: pointer;
+  flex: 1;
+}
+
+/* Horários ficam na linha de baixo, bem espaçados */
+.day-times {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding-left: 28px;
+}
+.day-times span {
+  font-size: 12px;
+  color: var(--text3);
+  white-space: nowrap;
+}
+.day-times input[type=time] {
+  flex: 1;
+  padding: 7px 8px;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  min-width: 0;
+}
+</style>
+{% endblock %}
+
 {% block body %}
 <div class="container">
 
@@ -13,14 +67,14 @@
 
     <p class="section-title">Jornada semanal</p>
     <div class="card card-sm" style="margin-bottom:16px">
-      <div style="display:flex;gap:16px">
-        <div style="flex:1">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
           <label class="form-label">Total de horas semanais</label>
           <input type="number" name="weekly_hours" class="form-input"
             value="{{ cfg.weekly_hours }}" min="1" max="60" step="0.5">
         </div>
-        <div style="flex:1">
-          <label class="form-label">Intervalo de almoço (min)</label>
+        <div>
+          <label class="form-label">Intervalo almoço (min)</label>
           <input type="number" name="lunch_minutes" class="form-input"
             value="{{ cfg.lunch_minutes }}" min="0" max="120" step="5">
         </div>
@@ -32,12 +86,14 @@
       {% set day_labels = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'] %}
       {% for wd in range(7) %}
       {% set is_checked = wd in cfg.work_days %}
-      <div class="check-row">
-        <input type="checkbox" name="work_days" value="{{ wd }}"
-          id="wd_{{ wd }}" {{ 'checked' if is_checked }}
-          onchange="toggleDayInputs({{ wd }}, this.checked)">
-        <label for="wd_{{ wd }}" style="min-width:72px">{{ day_labels[wd] }}</label>
-        <div class="time-mini" id="times_{{ wd }}" style="{{ 'display:none' if not is_checked else '' }}">
+      <div class="day-row">
+        <div class="day-row-top">
+          <input type="checkbox" name="work_days" value="{{ wd }}"
+            id="wd_{{ wd }}" {{ 'checked' if is_checked }}
+            onchange="toggleDayInputs({{ wd }}, this.checked)">
+          <label for="wd_{{ wd }}">{{ day_labels[wd] }}</label>
+        </div>
+        <div class="day-times" id="times_{{ wd }}" style="{{ 'display:none' if not is_checked else '' }}">
           <span>Entrada</span>
           <input type="time" name="entry_{{ wd }}"
             value="{{ day_schedules.get(wd|string, {}).get('entry', '08:00') }}">
@@ -49,7 +105,9 @@
       {% endfor %}
     </div>
 
-    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">Salvar configurações</button>
+    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">
+      Salvar configurações
+    </button>
   </form>
 
   <div style="margin-top:24px;padding-top:16px;border-top:0.5px solid var(--border)">
@@ -64,8 +122,7 @@
 
 <script>
 function toggleDayInputs(wd, checked) {
-  const el = document.getElementById('times_' + wd);
-  el.style.display = checked ? '' : 'none';
+  document.getElementById('times_' + wd).style.display = checked ? '' : 'none';
 }
 </script>
 {% endblock %}
