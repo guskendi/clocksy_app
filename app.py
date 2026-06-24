@@ -530,6 +530,44 @@ def admin_fix_empty_records():
     return redirect(url_for('admin_dashboard'))
 
 
+# ─── SETUP INICIAL ───────────────────────────────────────────────────────────
+
+@app.route('/setup', methods=['GET', 'POST'])
+def setup():
+    """Rota de setup — só funciona se não existir nenhum admin ainda."""
+    with app.app_context():
+        db.create_all()
+        if User.query.filter_by(is_admin=True).first():
+            flash('Setup já foi realizado.', 'info')
+            return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
+        password2 = request.form.get('password2', '')
+        setup_key = request.form.get('setup_key', '')
+
+        expected_key = os.environ.get('SETUP_KEY', '')
+        if not expected_key or setup_key != expected_key:
+            flash('Chave de setup incorreta.', 'error')
+        elif not name or not email or not password:
+            flash('Preencha todos os campos.', 'error')
+        elif password != password2:
+            flash('As senhas não coincidem.', 'error')
+        elif len(password) < 6:
+            flash('A senha deve ter pelo menos 6 caracteres.', 'error')
+        else:
+            u = User(name=name, email=email, is_admin=True)
+            u.set_password(password)
+            db.session.add(u)
+            db.session.commit()
+            flash('Admin criado com sucesso! Faça login.', 'success')
+            return redirect(url_for('login'))
+
+    return render_template('setup.html')
+
+
 # ─── INIT ─────────────────────────────────────────────────────────────────────
 
 @app.cli.command('create-admin')
@@ -547,6 +585,10 @@ def create_admin():
     db.session.add(u)
     db.session.commit()
     print(f'Admin {name} criado!')
+
+# Cria tabelas automaticamente se não existirem (primeiro deploy)
+with app.app_context():
+    db.create_all()
 
 if __name__ == '__main__':
     app.run(debug=True)
