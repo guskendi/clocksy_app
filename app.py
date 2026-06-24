@@ -19,7 +19,14 @@ load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-change-me')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///clocksy.db')
+
+# Ajusta a DATABASE_URL para compatibilidade com pg8000
+_db_url = os.environ.get('DATABASE_URL', 'sqlite:///clocksy.db')
+if 'postgresql' in _db_url and 'pg8000' not in _db_url:
+    _db_url = _db_url.replace('postgresql://', 'postgresql+pg8000://')
+if 'sslmode=require' in _db_url:
+    _db_url = _db_url.replace('sslmode=require', 'ssl=true')
+app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
