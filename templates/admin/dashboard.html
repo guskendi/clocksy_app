@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Admin — Clocksy{% endblock %}
+{% block body %}
+<div class="container">
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="alert alert-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <div>
+      <h2 style="font-size:18px;font-weight:500">Usuários</h2>
+      <p style="font-size:13px;color:var(--text2)">{{ users|length }} usuário{{ 's' if users|length != 1 }} cadastrado{{ 's' if users|length != 1 }}</p>
+    </div>
+    <a href="{{ url_for('admin_new_user') }}" class="btn btn-primary">+ Novo usuário</a>
+  </div>
+
+  <div style="margin-bottom:20px;padding:14px 16px;background:var(--red-bg);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:space-between;gap:12px">
+    <div>
+      <p style="font-size:13px;font-weight:500;color:var(--red)">Registros incompletos</p>
+      <p style="font-size:12px;color:var(--red);opacity:.8">Remove registros confirmados sem horário (bug da versão anterior)</p>
+    </div>
+    <form method="POST" action="{{ url_for('admin_fix_empty_records') }}"
+      onsubmit="return confirm('Remover todos os registros sem horário preenchido?')">
+      <button type="submit" class="btn btn-sm" style="color:var(--red);border-color:var(--red);white-space:nowrap">Limpar agora</button>
+    </form>
+  </div>
+
+  {% if users %}
+  <div class="admin-card">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>E-mail</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for u in users %}
+      <tr>
+        <td style="font-weight:500">{{ u.name }}</td>
+        <td style="color:var(--text2);font-size:13px">{{ u.email }}</td>
+        <td>
+          {% if u.is_active %}
+            <span class="badge badge-green">Ativo</span>
+          {% else %}
+            <span class="badge badge-gray">Inativo</span>
+          {% endif %}
+        </td>
+        <td>
+          <div style="display:flex;gap:6px;justify-content:flex-end">
+            <a href="{{ url_for('admin_user_records', uid=u.id) }}" class="btn btn-sm">Ver registros</a>
+            <a href="{{ url_for('admin_edit_user', uid=u.id) }}" class="btn btn-sm">Editar</a>
+            <form method="POST" action="{{ url_for('admin_delete_user', uid=u.id) }}"
+              onsubmit="return confirm('Remover {{ u.name }}? Todos os registros serão apagados.')">
+              <button type="submit" class="btn btn-sm" style="color:var(--red);border-color:var(--red)">Excluir</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">Nenhum usuário cadastrado ainda.<br>Crie o primeiro clicando em "Novo usuário".</div>
+  {% endif %}
+
+</div>
+{% endblock %}

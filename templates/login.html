@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Clocksy — Login</title>
+<style>
+:root{--bg:#f5f5f0;--surface:#fff;--border:#e0dfd8;--text:#1a1a1e;--text2:#6b6b72;--text3:#9b9ba2;--accent:#1a1a2e;--accent-light:#2d2d50;--red:#993c1d;--red-bg:#faece7;--green:#0f6e56;--green-bg:#e1f5ee;--blue:#185fa5;--blue-bg:#e6f1fb;--radius:10px;--radius-sm:6px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:36px 28px;width:100%;max-width:380px}
+.logo{font-size:24px;font-weight:700;letter-spacing:-0.5px;margin-bottom:4px}
+.logo-sub{font-size:13px;color:var(--text2);margin-bottom:28px}
+.group{margin-bottom:16px}
+label{display:block;font-size:13px;color:var(--text2);margin-bottom:6px}
+input{width:100%;padding:10px 12px;border:0.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:15px;font-family:inherit}
+input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(26,26,46,.1)}
+.btn{width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:15px;font-family:inherit;font-weight:500;cursor:pointer;margin-top:8px;transition:background .15s}
+.btn:hover{background:var(--accent-light)}
+.link-row{text-align:center;margin-top:16px;font-size:13px;color:var(--text2)}
+.link-row a{color:var(--accent)}
+.alert{padding:10px 14px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:16px}
+.alert-error{background:var(--red-bg);color:var(--red)}
+.alert-info{background:var(--blue-bg);color:var(--blue)}
+.alert-success{background:var(--green-bg);color:var(--green)}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">Clocksy</div>
+  <div class="logo-sub">Controle de jornada</div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="alert alert-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <form method="POST">
+    <div class="group">
+      <label>E-mail</label>
+      <input type="email" name="email" placeholder="seu@email.com" required autocomplete="email">
+    </div>
+    <div class="group">
+      <label>Senha</label>
+      <input type="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+    </div>
+    <button type="submit" class="btn">Entrar</button>
+  </form>
+
+  <div class="link-row">
+    <a href="{{ url_for('forgot_password') }}">Esqueci minha senha</a>
+  </div>
+</div>
+</body>
+</html>

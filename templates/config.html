@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}Configurações — Clocksy{% endblock %}
+{% block body %}
+<div class="container">
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="alert alert-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <form method="POST">
+
+    <p class="section-title">Jornada semanal</p>
+    <div class="card card-sm" style="margin-bottom:16px">
+      <div style="display:flex;gap:16px">
+        <div style="flex:1">
+          <label class="form-label">Total de horas semanais</label>
+          <input type="number" name="weekly_hours" class="form-input"
+            value="{{ cfg.weekly_hours }}" min="1" max="60" step="0.5">
+        </div>
+        <div style="flex:1">
+          <label class="form-label">Intervalo de almoço (min)</label>
+          <input type="number" name="lunch_minutes" class="form-input"
+            value="{{ cfg.lunch_minutes }}" min="0" max="120" step="5">
+        </div>
+      </div>
+    </div>
+
+    <p class="section-title">Dias e horários de trabalho</p>
+    <div class="card card-sm" style="margin-bottom:16px">
+      {% set day_labels = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'] %}
+      {% for wd in range(7) %}
+      {% set is_checked = wd in cfg.work_days %}
+      <div class="check-row">
+        <input type="checkbox" name="work_days" value="{{ wd }}"
+          id="wd_{{ wd }}" {{ 'checked' if is_checked }}
+          onchange="toggleDayInputs({{ wd }}, this.checked)">
+        <label for="wd_{{ wd }}" style="min-width:72px">{{ day_labels[wd] }}</label>
+        <div class="time-mini" id="times_{{ wd }}" style="{{ 'display:none' if not is_checked else '' }}">
+          <span>Entrada</span>
+          <input type="time" name="entry_{{ wd }}"
+            value="{{ day_schedules.get(wd|string, {}).get('entry', '08:00') }}">
+          <span>Saída</span>
+          <input type="time" name="exit_{{ wd }}"
+            value="{{ day_schedules.get(wd|string, {}).get('exit', '18:00') }}">
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">Salvar configurações</button>
+  </form>
+
+  <div style="margin-top:24px;padding-top:16px;border-top:0.5px solid var(--border)">
+    <p class="section-title">Sobre emendas e justificativas</p>
+    <p style="font-size:13px;color:var(--text2);line-height:1.7">
+      Em dias marcados como <strong>Emenda de feriado</strong>, o dia é tratado como folga — não conta na meta nem nas horas trabalhadas.<br>
+      Dias marcados como <strong>Usar horas extras</strong> descontam do banco de horas — podendo deixá-lo negativo.<br>
+      Saídas antecipadas são registradas junto com os horários reais de entrada/saída.
+    </p>
+  </div>
+</div>
+
+<script>
+function toggleDayInputs(wd, checked) {
+  const el = document.getElementById('times_' + wd);
+  el.style.display = checked ? '' : 'none';
+}
+</script>
+{% endblock %}

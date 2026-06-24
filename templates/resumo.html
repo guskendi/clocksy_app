@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Resumo — Clocksy{% endblock %}
+{% block body %}
+<div class="container">
+
+  <div class="month-nav">
+    <a href="{{ url_for('resumo', year=year-1 if month==1 else year, month=12 if month==1 else month-1) }}" class="btn-icon">‹</a>
+    <h2>{{ month_name }} {{ year }}</h2>
+    <a href="{{ url_for('resumo', year=year+1 if month==12 else year, month=1 if month==12 else month+1) }}" class="btn-icon">›</a>
+  </div>
+
+  <!-- banco de horas global -->
+  <div class="card card-sm" style="border-left: 3px solid {{ '#1D9E75' if bank_balance_mins >= 0 else '#D85A30' }};margin-bottom:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div class="stat-label">Banco de horas acumulado{% if is_current_month %} — até hoje{% endif %}</div>
+        <div class="stat-val {{ 'pos' if bank_balance_mins >= 0 else 'neg' }}" style="font-size:26px">
+          {{ '+' if bank_balance_mins >= 0 else '' }}{{ minutes_to_hhmm(bank_balance_mins) }}
+        </div>
+        {% if is_current_month %}
+        <div class="stat-sub" style="margin-top:4px">Os dias restantes do mês não estão contabilizados</div>
+        {% endif %}
+      </div>
+      <div style="font-size:32px;opacity:.12">⏱</div>
+    </div>
+  </div>
+
+  <div class="summary-grid">
+    <div class="stat-card">
+      <div class="stat-label">Trabalhadas</div>
+      <div class="stat-val neu">{{ minutes_to_hhmm(summary.total_worked_mins) }}</div>
+      <div class="stat-sub">meta: {{ minutes_to_hhmm(summary.total_target_mins) }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Saldo{% if is_current_month %} até hoje{% else %} do mês{% endif %}</div>
+      <div class="stat-val {{ 'pos' if summary.balance_mins >= 0 else 'neg' }}">
+        {{ '+' if summary.balance_mins >= 0 else '' }}{{ minutes_to_hhmm(summary.balance_mins) }}
+      </div>
+      <div class="stat-sub">{{ summary.days_logged }} dia{{ 's' if summary.days_logged != 1 }} registrado{{ 's' if summary.days_logged != 1 }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Dias pendentes</div>
+      <div class="stat-val {{ 'neg' if summary.days_pending > 0 else 'neu' }}">{{ summary.days_pending }}</div>
+      <div class="stat-sub">sem preenchimento</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Horas usadas</div>
+      <div class="stat-val neu">{{ minutes_to_hhmm(summary.overtime_used_mins) }}</div>
+      <div class="stat-sub">do banco este mês</div>
+    </div>
+  </div>
+
+  {% set pct = [[(summary.total_worked_mins / summary.total_target_mins * 100)|round|int if summary.total_target_mins > 0 else 0, 0]|max, 120]|min %}
+  <div class="progress" style="margin-bottom:20px">
+    <div class="progress-fill {{ 'over' if pct > 100 else '' }}" style="width:{{ pct }}%"></div>
+  </div>
+
+  <p class="section-title">Detalhes do mês</p>
+
+  {% if day_rows %}
+  <div class="admin-card">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Dia</th>
+          <th>Entrada</th>
+          <th>Saída</th>
+          <th>Trabalhado</th>
+          <th>Saldo</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for row in day_rows %}
+      <tr>
+        <td>
+          {{ row.day }} <span style="color:var(--text3);font-size:12px">{{ row.weekday_name[:3] }}</span>
+          {% if row.jtype %}
+            <span class="badge badge-amber" style="font-size:10px;margin-left:4px">{{ row.jlabel }}</span>
+          {% endif %}
+          {% if row.confirmed %}<span style="color:var(--green);font-size:11px;margin-left:2px">✓</span>{% endif %}
+        </td>
+        <td style="color:var(--text2)">{{ row.entry or '—' }}</td>
+        <td style="color:var(--text2)">{{ row.exit or '—' }}</td>
+        <td>{{ row.worked or '—' }}</td>
+        <td class="{{ 'pos' if row.balance_mins and row.balance_mins > 0 else ('neg' if row.balance_mins and row.balance_mins < 0 else '') }}">
+          {% if row.balance_mins is not none %}{{ '+' if row.balance_mins >= 0 else '' }}{{ row.balance }}{% else %}—{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">Nenhum registro neste mês.</div>
+  {% endif %}
+
+</div>
+{% endblock %}

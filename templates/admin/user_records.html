@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}Registros de {{ viewed_user.name }} — Clocksy{% endblock %}
+{% block body %}
+<div class="container">
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
+    <a href="{{ url_for('admin_dashboard') }}" style="color:var(--text2);font-size:13px">← Voltar</a>
+    <h2 style="font-size:18px;font-weight:500">{{ viewed_user.name }}</h2>
+  </div>
+  <p style="font-size:13px;color:var(--text2);margin-bottom:16px">{{ viewed_user.email }}</p>
+
+  <div class="month-nav">
+    <a href="{{ url_for('admin_user_records', uid=viewed_user.id, year=year-1 if month==1 else year, month=12 if month==1 else month-1) }}" class="btn-icon">‹</a>
+    <span style="font-size:15px;font-weight:500">{{ month_name }} {{ year }}</span>
+    <a href="{{ url_for('admin_user_records', uid=viewed_user.id, year=year+1 if month==12 else year, month=1 if month==12 else month+1) }}" class="btn-icon">›</a>
+  </div>
+
+  <div class="summary-grid">
+    <div class="stat-card">
+      <div class="stat-label">Trabalhadas</div>
+      <div class="stat-val neu">{{ minutes_to_hhmm(summary.total_worked_mins) }}</div>
+      <div class="stat-sub">de {{ minutes_to_hhmm(summary.total_target_mins) }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Saldo</div>
+      <div class="stat-val {{ 'pos' if summary.balance_mins >= 0 else 'neg' }}">
+        {{ '+' if summary.balance_mins >= 0 else '' }}{{ minutes_to_hhmm(summary.balance_mins) }}
+      </div>
+      <div class="stat-sub">{{ summary.days_logged }} dias registrados</div>
+    </div>
+  </div>
+
+  {% set month_names = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'] %}
+  {% set day_names = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'] %}
+
+  {% if records_map %}
+  <div class="admin-card">
+    <table class="table">
+      <thead>
+        <tr><th>Data</th><th>Entrada</th><th>Saída</th><th>Justificativa</th><th></th></tr>
+      </thead>
+      <tbody>
+      {% for rec_date, rec in records_map.items()|sort %}
+      <tr>
+        <td>{{ rec_date.day }} <span style="color:var(--text3);font-size:12px">{{ day_names[(rec_date.weekday()+1)%7] }}</span></td>
+        <td>{{ rec.entry_time or '—' }}</td>
+        <td>{{ rec.exit_time or '—' }}</td>
+        <td>
+          {% if rec.justification_type %}
+            <span class="badge badge-amber" style="font-size:11px">{{ JUSTIFICATION_LABELS.get(rec.justification_type, rec.justification_type) }}</span>
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          <form method="POST" action="{{ url_for('admin_delete_record', rid=rec.id) }}"
+            onsubmit="return confirm('Remover este registro?')">
+            <button type="submit" class="btn btn-sm" style="color:var(--red);border-color:var(--red)">Excluir</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">Nenhum registro neste mês.</div>
+  {% endif %}
+
+</div>
+{% endblock %}

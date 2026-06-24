@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>{% block title %}Clocksy{% endblock %}</title>
+<style>
+:root {
+  --bg: #f5f5f0;
+  --surface: #ffffff;
+  --surface2: #f0efe8;
+  --border: #e0dfd8;
+  --text: #1a1a1e;
+  --text2: #6b6b72;
+  --text3: #9b9ba2;
+  --accent: #1a1a2e;
+  --accent-light: #2d2d50;
+  --green: #0f6e56;
+  --green-bg: #e1f5ee;
+  --red: #993c1d;
+  --red-bg: #faece7;
+  --amber: #854f0b;
+  --amber-bg: #faeeda;
+  --blue: #185fa5;
+  --blue-bg: #e6f1fb;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+a { color: inherit; text-decoration: none; }
+
+/* NAV */
+.topbar {
+  background: var(--accent);
+  color: #fff;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  height: 52px;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.topbar-logo {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  color: #fff;
+  flex: 1;
+}
+.topbar-logo span { opacity: .55; font-weight: 400; }
+.topbar-nav { display: flex; gap: 4px; }
+.topbar-nav a {
+  color: rgba(255,255,255,.65);
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  transition: background .15s, color .15s;
+}
+.topbar-nav a:hover, .topbar-nav a.active {
+  background: rgba(255,255,255,.12);
+  color: #fff;
+}
+.topbar-user {
+  font-size: 12px;
+  color: rgba(255,255,255,.55);
+  border-left: 1px solid rgba(255,255,255,.15);
+  padding-left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.topbar-user a { color: rgba(255,255,255,.65); font-size: 12px; }
+.topbar-user a:hover { color: #fff; }
+
+/* LAYOUT */
+.container { max-width: 600px; margin: 0 auto; padding: 20px 16px 80px; }
+
+/* CARDS */
+.card {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 10px;
+}
+.card-sm { padding: 12px 14px; }
+
+/* MONTH NAV */
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.month-nav h2 { font-size: 16px; font-weight: 500; }
+.btn-icon {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 14px;
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--text);
+  transition: background .15s;
+}
+.btn-icon:hover { background: var(--surface2); }
+
+/* SUMMARY GRID */
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.stat-card { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px 14px; }
+.stat-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+.stat-val { font-size: 22px; font-weight: 500; }
+.stat-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.pos { color: var(--green); }
+.neg { color: var(--red); }
+.neu { color: var(--text); }
+
+/* PROGRESS */
+.progress { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; margin-bottom: 20px; }
+.progress-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width .3s; }
+.progress-fill.over { background: #0f6e56; }
+
+/* DAY CARDS */
+.day-card {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  transition: border-color .15s;
+}
+.day-card.confirmed { border-left: 3px solid #1D9E75; }
+.day-card.has-absence { border-left: 3px solid #EF9F27; }
+.day-card.pending { border-left: 3px solid #F09595; }
+.day-card.today { border-color: var(--blue); }
+
+.day-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.day-label { font-size: 14px; font-weight: 500; }
+.day-label .wd { font-size: 12px; font-weight: 400; color: var(--text2); margin-left: 4px; }
+.day-actions { display: flex; gap: 6px; align-items: center; }
+
+/* BADGES */
+.badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.badge-green { background: var(--green-bg); color: var(--green); }
+.badge-amber { background: var(--amber-bg); color: var(--amber); }
+.badge-red { background: var(--red-bg); color: var(--red); }
+.badge-blue { background: var(--blue-bg); color: var(--blue); }
+.badge-gray { background: var(--surface2); color: var(--text2); }
+
+/* TIME ROW */
+.time-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.time-row label { font-size: 12px; color: var(--text2); min-width: 48px; }
+.time-row input[type=time] {
+  flex: 1;
+  padding: 7px 10px;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+}
+.day-result {
+  font-size: 12px;
+  color: var(--text3);
+  text-align: right;
+  min-height: 16px;
+  margin-top: 4px;
+}
+.day-result.over { color: var(--green); }
+.day-result.under { color: var(--red); }
+
+/* BUTTONS */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  border: 0.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background .15s;
+  font-family: inherit;
+}
+.btn:hover { background: var(--surface2); }
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.btn-primary:hover { background: var(--accent-light); }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-confirm {
+  background: none;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--text2);
+  font-family: inherit;
+  transition: all .15s;
+}
+.btn-confirm:hover { background: var(--green-bg); color: var(--green); border-color: #5DCAA5; }
+.btn-confirm.confirmed { background: var(--green-bg); color: var(--green); border-color: #5DCAA5; }
+.btn-justify {
+  background: none;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--text2);
+  font-family: inherit;
+  transition: all .15s;
+}
+.btn-justify:hover { background: var(--amber-bg); color: var(--amber); border-color: #FAC775; }
+.btn-justify.has-just { background: var(--amber-bg); color: var(--amber); border-color: #FAC775; }
+
+/* FORMS */
+.form-group { margin-bottom: 16px; }
+.form-label { font-size: 13px; color: var(--text2); display: block; margin-bottom: 6px; }
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 15px;
+  font-family: inherit;
+}
+.form-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(26,26,46,.1); }
+select.form-input { cursor: pointer; }
+
+/* ALERTS */
+.alert { padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 14px; }
+.alert-error { background: var(--red-bg); color: var(--red); }
+.alert-success { background: var(--green-bg); color: var(--green); }
+.alert-info { background: var(--blue-bg); color: var(--blue); }
+
+/* MODAL */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 200;
+  align-items: flex-end;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 24px 20px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+.modal-title { font-size: 16px; font-weight: 500; margin-bottom: 16px; }
+.modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+.modal-actions .btn { flex: 1; justify-content: center; }
+
+/* TABLE */
+.table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.table th { font-weight: 500; color: var(--text2); text-align: left; padding: 8px 10px; border-bottom: 0.5px solid var(--border); font-size: 12px; text-transform: uppercase; letter-spacing:.03em; }
+.table td { padding: 10px 10px; border-bottom: 0.5px solid var(--border); }
+.table tr:last-child td { border-bottom: none; }
+
+/* LOG IN */
+.login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.login-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 32px 28px; width: 100%; max-width: 380px; }
+.login-logo { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 6px; }
+.login-logo span { color: var(--text2); font-weight: 400; font-size: 14px; display: block; margin-top: 2px; }
+
+/* SECTION TITLE */
+.section-title { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+
+/* CHECKBOXES CONFIG */
+.check-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+.check-row:last-child { border-bottom: none; }
+.check-row input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+.check-row label { flex: 1; font-size: 14px; cursor: pointer; }
+.check-row .time-mini { display: flex; gap: 6px; align-items: center; }
+.check-row .time-mini input[type=time] {
+  padding: 4px 8px;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  width: 90px;
+}
+.check-row .time-mini span { font-size: 12px; color: var(--text3); }
+
+/* EMPTY */
+.empty { text-align: center; color: var(--text3); font-size: 13px; padding: 32px 0; }
+
+/* ADMIN TABLE */
+.admin-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.admin-card .table td:last-child { text-align: right; }
+
+@media (max-width: 400px) {
+  .summary-grid { grid-template-columns: 1fr 1fr; }
+  .topbar-nav a { padding: 6px 7px; font-size: 12px; }
+}
+</style>
+{% block head %}{% endblock %}
+</head>
+<body>
+{% if current_user.is_authenticated %}
+<nav class="topbar">
+  <span class="topbar-logo">Clocksy <span>horas</span></span>
+  {% if not current_user.is_admin %}
+  <div class="topbar-nav">
+    <a href="{{ url_for('registro') }}" class="{{ 'active' if request.endpoint == 'registro' }}">Registro</a>
+    <a href="{{ url_for('resumo') }}" class="{{ 'active' if request.endpoint == 'resumo' }}">Resumo</a>
+    <a href="{{ url_for('config') }}" class="{{ 'active' if request.endpoint == 'config' }}">Config</a>
+  </div>
+  {% else %}
+  <div class="topbar-nav">
+    <a href="{{ url_for('admin_dashboard') }}" class="{{ 'active' if 'admin' in request.endpoint }}">Admin</a>
+  </div>
+  {% endif %}
+  <div class="topbar-user">
+    {{ current_user.name.split()[0] }}
+    <a href="{{ url_for('logout') }}">Sair</a>
+  </div>
+</nav>
+{% endif %}
+{% block body %}{% endblock %}
+
+<!-- MODAL JUSTIFICATIVA -->
+<div class="modal-overlay" id="modal-just">
+  <div class="modal">
+    <p class="modal-title" id="modal-just-title">Justificativa</p>
+    <input type="hidden" id="modal-date">
+    <div class="form-group">
+      <label class="form-label">Tipo</label>
+      <select class="form-input" id="modal-jtype" onchange="onJtypeChange()">
+        <option value="">— selecione —</option>
+        <optgroup label="Ausência total">
+          <option value="holiday">Feriado</option>
+          <option value="bridge">Emenda de feriado</option>
+          <option value="overtime_use">Usar horas extras (banco)</option>
+          <option value="sick_day">Não estava bem</option>
+          <option value="other_absence">Outro motivo</option>
+        </optgroup>
+        <optgroup label="Saída antecipada">
+          <option value="early_exit_overtime">Saída antecipada — usar horas extras</option>
+          <option value="early_exit_sick">Saída antecipada — não estava bem</option>
+          <option value="early_exit_unexpected">Saída antecipada — imprevisto</option>
+          <option value="early_exit_other">Saída antecipada — outro motivo</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="form-group" id="modal-note-group">
+      <label class="form-label">Observação <span style="color:var(--text3)">(opcional)</span></label>
+      <textarea class="form-input" id="modal-note" rows="2" placeholder="Detalhe se quiser..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveJustification()">Salvar</button>
+    </div>
+    <div style="margin-top:12px;text-align:center">
+      <button class="btn btn-sm" style="color:var(--red);border-color:var(--red)" onclick="removeJustification()">Remover justificativa</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function openJustModal(dateStr, dayLabel, currentJtype, currentNote) {
+  document.getElementById('modal-date').value = dateStr;
+  document.getElementById('modal-just-title').textContent = 'Justificativa — ' + dayLabel;
+  document.getElementById('modal-jtype').value = currentJtype || '';
+  document.getElementById('modal-note').value = currentNote || '';
+  document.getElementById('modal-just').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal-just').classList.remove('open');
+}
+function onJtypeChange() {}
+
+async function saveJustification() {
+  const dateStr = document.getElementById('modal-date').value;
+  const jtype = document.getElementById('modal-jtype').value;
+  const note = document.getElementById('modal-note').value;
+  const res = await fetch('/api/record', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({date: dateStr, justification_type: jtype, justification_note: note})
+  });
+  const data = await res.json();
+  closeModal();
+  updateDayCard(dateStr, data);
+}
+
+async function removeJustification() {
+  const dateStr = document.getElementById('modal-date').value;
+  const res = await fetch('/api/record', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({date: dateStr, justification_type: '', justification_note: ''})
+  });
+  const data = await res.json();
+  closeModal();
+  updateDayCard(dateStr, data);
+}
+
+function getCardTimes(dateStr) {
+  const entry = document.getElementById('entry-' + dateStr);
+  const exit  = document.getElementById('exit-'  + dateStr);
+  return {
+    entry: entry ? entry.value : null,
+    exit:  exit  ? exit.value  : null
+  };
+}
+
+async function saveTime(dateStr, field, value) {
+  const times = getCardTimes(dateStr);
+  const body = { date: dateStr, entry_time: times.entry, exit_time: times.exit };
+  body[field] = value;
+  const res = await fetch('/api/record', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  updateDayResult(dateStr, data);
+  if (typeof refreshTotals === 'function') refreshTotals();
+}
+
+async function toggleConfirm(dateStr, btn) {
+  const isConfirmed = btn.classList.contains('confirmed');
+  // Inclui os horários atuais dos inputs para garantir que sejam salvos
+  const times = getCardTimes(dateStr);
+  const body = {
+    date: dateStr,
+    confirmed: !isConfirmed,
+    entry_time: times.entry,
+    exit_time: times.exit
+  };
+  const res = await fetch('/api/record', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (data.confirmed) {
+    btn.classList.add('confirmed');
+    btn.textContent = '✓ Confirmado';
+    const card = document.getElementById('card-' + dateStr);
+    card.className = card.className.replace('pending','').trim() + ' confirmed';
+    updateDayResult(dateStr, data);
+  } else {
+    btn.classList.remove('confirmed');
+    btn.textContent = '✓ Confirmar';
+    const card = document.getElementById('card-' + dateStr);
+    card.className = card.className.replace('confirmed','').trim();
+  }
+  if (typeof refreshTotals === 'function') refreshTotals();
+}
+
+function updateDayResult(dateStr, data) {
+  const el = document.getElementById('result-' + dateStr);
+  if (!el) return;
+  if (data.balance_mins === null || data.balance_mins === undefined) { el.textContent = ''; el.className = 'day-result'; return; }
+  el.textContent = (data.worked || '') + ' trabalhadas (' + (data.balance_mins >= 0 ? '+' : '') + (data.balance || '') + ')';
+  el.className = 'day-result ' + (data.balance_mins > 0 ? 'over' : data.balance_mins < 0 ? 'under' : '');
+}
+
+const DAY_OFF_TYPES = ['holiday', 'bridge'];
+const DAY_ABSENT_TYPES = ['overtime_use', 'sick_day', 'other_absence'];
+
+function updateDayCard(dateStr, data) {
+  updateDayResult(dateStr, data);
+
+  // Atualiza botão justificar
+  const jbtn = document.getElementById('jbtn-' + dateStr);
+  if (jbtn) {
+    if (data.jtype) {
+      jbtn.classList.add('has-just');
+      jbtn.textContent = '! ' + (data.jlabel || data.jtype);
+      jbtn.setAttribute('data-jtype', data.jtype);
+      jbtn.setAttribute('data-jnote', data.jnote || '');
+    } else {
+      jbtn.classList.remove('has-just');
+      jbtn.textContent = 'Justificar';
+      jbtn.setAttribute('data-jtype', '');
+      jbtn.setAttribute('data-jnote', '');
+    }
+  }
+
+  // Atualiza classe do card conforme tipo
+  const card = document.getElementById('card-' + dateStr);
+  if (!card) return;
+  card.classList.remove('has-absence', 'day-off', 'day-absent', 'confirmed', 'pending');
+
+  if (DAY_OFF_TYPES.includes(data.jtype)) {
+    card.classList.add('day-off');
+  } else if (DAY_ABSENT_TYPES.includes(data.jtype)) {
+    card.classList.add('day-absent');
+  } else if (data.jtype) {
+    card.classList.add('has-absence');
+  }
+
+  // Mostra/esconde inputs e botão confirmar conforme tipo
+  const timeRow = card.querySelector('.time-row');
+  const resultRow = card.querySelector('.day-result');
+  const cbtn = document.getElementById('cbtn-' + dateStr);
+  const isDayOff = DAY_OFF_TYPES.includes(data.jtype);
+  const isDayAbsent = DAY_ABSENT_TYPES.includes(data.jtype);
+  const hideInputs = isDayOff || isDayAbsent;
+
+  // Restaura inputs se justificativa foi removida
+  if (!hideInputs) {
+    if (timeRow) {
+      timeRow.style.display = '';
+    } else {
+      // inputs foram ocultados por CSS/render — precisa recriar a linha
+      const entryId = 'entry-' + dateStr;
+      const exitId  = 'exit-'  + dateStr;
+      if (!document.getElementById(entryId)) {
+        const row = document.createElement('div');
+        row.className = 'time-row';
+        row.innerHTML = `
+          <label>Entrada</label>
+          <input type="time" id="${entryId}" value="" onchange="saveTime('${dateStr}', 'entry_time', this.value)">
+          <label style="min-width:36px;text-align:right">Saída</label>
+          <input type="time" id="${exitId}"  value="" onchange="saveTime('${dateStr}', 'exit_time',  this.value)">`;
+        card.appendChild(row);
+        const res = document.createElement('div');
+        res.className = 'day-result';
+        res.id = 'result-' + dateStr;
+        card.appendChild(res);
+      }
+    }
+    if (cbtn) cbtn.style.display = '';
+    // Se não existe botão confirmar ainda (estava oculto desde o render), cria
+    if (!cbtn) {
+      const actions = card.querySelector('.day-actions');
+      if (actions) {
+        const newBtn = document.createElement('button');
+        newBtn.className = 'btn-confirm';
+        newBtn.id = 'cbtn-' + dateStr;
+        newBtn.textContent = '✓ Confirmar';
+        newBtn.onclick = () => toggleConfirm(dateStr, newBtn);
+        actions.appendChild(newBtn);
+      }
+    }
+  } else {
+    if (timeRow) timeRow.style.display = 'none';
+    if (resultRow) resultRow.style.display = 'none';
+    if (cbtn) cbtn.style.display = 'none';
+  }
+
+  // Atualiza info text
+  let infoEl = card.querySelector('.day-off-info, .day-absent-info');
+  if (hideInputs) {
+    if (!infoEl) {
+      infoEl = document.createElement('div');
+      card.appendChild(infoEl);
+    }
+    if (isDayOff) {
+      infoEl.className = 'day-off-info';
+      infoEl.textContent = (data.jlabel || '') + ' — dia não contabilizado';
+    } else {
+      infoEl.className = 'day-absent-info';
+      infoEl.textContent = (data.jlabel || '') + (data.jtype === 'overtime_use' ? ' — horas descontadas do banco' : '');
+    }
+  } else if (infoEl) {
+    infoEl.remove();
+  }
+
+  if (typeof refreshTotals === 'function') refreshTotals();
+}
+
+document.getElementById('modal-just').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+</body>
+</html>
