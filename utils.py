@@ -196,13 +196,12 @@ def verify_reset_token(token, secret_key, max_age=3600):
     except Exception:
         return None
 
-def send_reset_email(to_email, reset_url):
+def _send_email_worker(to_email, reset_url):
     gmail_user = os.environ.get('GMAIL_USER', '')
     gmail_password = os.environ.get('GMAIL_APP_PASSWORD', '')
-
     if not gmail_user or not gmail_password:
         print("GMAIL_USER ou GMAIL_APP_PASSWORD não configurados")
-        return False
+        return
 
     html_body = f"""
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px">
@@ -223,11 +222,26 @@ def send_reset_email(to_email, reset_url):
         msg['From'] = f'Clocksy <{gmail_user}>'
         msg['To'] = to_email
         msg.attach(MIMEText(html_body, 'html', 'utf-8'))
-
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-            server.login(gmail_user, gmail_password)
-            server.sendmail(gmail_user, to_email, msg.as_string())
-        return True
+        # Tenta porta 587 (STARTTLS) — menos bloqueada em cloud
+        try:
+            with smtplib.SMTP('smtp.gmail.com', 587, timeout=15) as server:
+                server.ehlo()
+                server.starttls()
+                server.login(gmail_user, gmail_password)
+                server.sendmail(gmail_user, to_email, msg.as_string())
+        except Exception:
+            # Fallback porta 465 (SSL)
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=15) as server:
+                server.login(gmail_user, gmail_password)
+                server.sendmail(gmail_user, to_email, msg.as_string())
+        print(f"E-mail enviado para {to_email}")
     except Exception as e:
         print(f"Erro ao enviar e-mail: {e}")
-        return False
+
+
+def send_reset_email(to_email, reset_url):
+    """Envia e-mail em thread separada para não bloquear o worker do Gunicorn."""
+    import threading
+    t = threading.Thread(target=_send_email_worker, args=(to_email, reset_url), daemon=True)
+    t.start()
+    return True
