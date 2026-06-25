@@ -338,6 +338,7 @@ select.form-input { cursor: pointer; }
     <a href="{{ url_for('registro') }}" class="{{ 'active' if request.endpoint == 'registro' }}">Registro</a>
     <a href="{{ url_for('resumo') }}" class="{{ 'active' if request.endpoint == 'resumo' }}">Resumo</a>
     <a href="{{ url_for('config') }}" class="{{ 'active' if request.endpoint == 'config' }}">Config</a>
+    <a href="{{ url_for('import_hours') }}" class="{{ 'active' if request.endpoint == 'import_hours' }}">Importar</a>
   </div>
   {% else %}
   <div class="topbar-nav">

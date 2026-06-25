@@ -14,7 +14,10 @@
       <h2 style="font-size:18px;font-weight:500">Usuários</h2>
       <p style="font-size:13px;color:var(--text2)">{{ users|length }} usuário{{ 's' if users|length != 1 }} cadastrado{{ 's' if users|length != 1 }}</p>
     </div>
-    <a href="{{ url_for('admin_new_user') }}" class="btn btn-primary">+ Novo usuário</a>
+    <div style="display:flex;gap:8px">
+      <a href="{{ url_for('admin_import') }}" class="btn">Importar horas</a>
+      <a href="{{ url_for('admin_new_user') }}" class="btn btn-primary">+ Novo usuário</a>
+    </div>
   </div>
 
   <div style="margin-bottom:20px;padding:14px 16px;background:var(--red-bg);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:space-between;gap:12px">

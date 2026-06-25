@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% block title %}Confirmar importação — Clocksy{% endblock %}
+{% block body %}
+<div class="container">
+
+  <div style="margin-bottom:16px">
+    {% if target_user is defined %}
+    <a href="{{ url_for('admin_import') }}" style="color:var(--text2);font-size:13px">← Voltar</a>
+    {% else %}
+    <a href="{{ url_for('import_hours') }}" style="color:var(--text2);font-size:13px">← Voltar</a>
+    {% endif %}
+    <h2 style="font-size:18px;font-weight:500;margin-top:8px">Confirmar importação</h2>
+    <p style="font-size:13px;color:var(--text2);margin-top:4px">
+      {{ month_name }} {{ year }}
+      {% if target_user is defined %} — {{ target_user.name }}{% endif %}
+      · {{ preview|length }} dia{{ 's' if preview|length != 1 }} encontrado{{ 's' if preview|length != 1 }}
+    </p>
+  </div>
+
+  {% set conflicts = preview | selectattr('conflict') | list %}
+  {% if conflicts %}
+  <div class="alert" style="background:var(--amber-bg);color:var(--amber);margin-bottom:16px">
+    ⚠ {{ conflicts|length }} dia{{ 's' if conflicts|length != 1 }} já tem registro — escolha abaixo o que fazer.
+  </div>
+  {% endif %}
+
+  <div id="preview-list">
+    {% set day_names = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'] %}
+    {% for rec in preview %}
+    {% set wd = (([2026,month,rec.day]|join('-'))|string) %}
+    {% set rec_date = '{:04d}-{:02d}-{:02d}'.format(year, month, rec.day) %}
+    <div class="card card-sm" id="rec-{{ rec.day }}"
+         style="margin-bottom:8px;{% if rec.conflict %}border-left:3px solid #EF9F27{% endif %}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div>
+          <span style="font-size:14px;font-weight:500">Dia {{ rec.day }}</span>
+          {% if rec.conflict %}
+          <span class="badge badge-amber" style="margin-left:6px">conflito</span>
+          {% endif %}
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm action-btn" data-day="{{ rec.day }}" data-action="import"
+                  onclick="setAction({{ rec.day }}, 'import', this)"
+                  style="{% if not rec.conflict %}background:var(--accent);color:#fff;border-color:var(--accent){% endif %}">
+            ✓ Importar
+          </button>
+          <button class="btn btn-sm action-btn" data-day="{{ rec.day }}" data-action="skip"
+                  onclick="setAction({{ rec.day }}, 'skip', this)"
+                  style="{% if rec.conflict %}background:var(--surface2){% endif %}">
+            Pular
+          </button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px">
+        <div>
+          <span style="color:var(--text3)">Entrada</span>
+          <span style="margin-left:6px;font-weight:500">{{ rec.entry or '—' }}</span>
+        </div>
+        <div>
+          <span style="color:var(--text3)">Saí. alm.</span>
+          <span style="margin-left:6px;font-weight:500">{{ rec.lunch_out or '—' }}</span>
+        </div>
+        <div>
+          <span style="color:var(--text3)">Retorno</span>
+          <span style="margin-left:6px;font-weight:500">{{ rec.lunch_in or '—' }}</span>
+        </div>
+        <div>
+          <span style="color:var(--text3)">Saída</span>
+          <span style="margin-left:6px;font-weight:500">{{ rec.exit or '—' }}</span>
+        </div>
+        {% if rec.conflict and rec.day in existing and existing[rec.day].entry_time %}
+        <div style="grid-column:1/-1;margin-top:4px;padding-top:6px;border-top:0.5px solid var(--border)">
+          <span style="color:var(--text3);font-size:11px">Atual no banco: </span>
+          <span style="font-size:11px">
+            {{ existing[rec.day].entry_time or '—' }} →
+            {{ existing[rec.day].exit_time or '—' }}
+          </span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div style="margin-top:16px;display:flex;gap:10px">
+    <button class="btn" style="flex:1;justify-content:center" onclick="selectAll('import')">Importar tudo</button>
+    <button class="btn" style="flex:1;justify-content:center" onclick="selectAll('skip')">Pular tudo</button>
+  </div>
+
+  <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:10px"
+          onclick="confirmImport()">
+    Confirmar importação
+  </button>
+
+  <div id="result-msg" style="display:none;margin-top:16px"></div>
+</div>
+
+<script>
+const PREVIEW = {{ preview | tojson }};
+const YEAR    = {{ year }};
+const MONTH   = {{ month }};
+const USER_ID = {{ user_id }};
+
+// Estado das ações por dia
+const actions = {};
+PREVIEW.forEach(rec => {
+  actions[rec.day] = rec.conflict ? 'skip' : 'import';
+  // Inicializa visual
+  setTimeout(() => setAction(rec.day, actions[rec.day], null, true), 0);
+});
+
+function setAction(day, action, clickedBtn, silent) {
+  actions[day] = action;
+  const card = document.getElementById('rec-' + day);
+  if (!card) return;
+  card.querySelectorAll('.action-btn').forEach(btn => {
+    const isThis = btn.getAttribute('data-action') === action;
+    btn.style.background = isThis ? 'var(--accent)' : '';
+    btn.style.color = isThis ? '#fff' : '';
+    btn.style.borderColor = isThis ? 'var(--accent)' : '';
+  });
+  if (action === 'skip') {
+    card.style.opacity = '0.5';
+  } else {
+    card.style.opacity = '1';
+  }
+}
+
+function selectAll(action) {
+  PREVIEW.forEach(rec => setAction(rec.day, action));
+}
+
+async function confirmImport() {
+  const records = PREVIEW.map(rec => ({
+    day:       rec.day,
+    entry:     rec.entry,
+    lunch_out: rec.lunch_out,
+    lunch_in:  rec.lunch_in,
+    exit:      rec.exit,
+    action:    actions[rec.day] || 'import',
+  }));
+
+  const importing = records.filter(r => r.action === 'import').length;
+  if (importing === 0) {
+    alert('Nenhum dia selecionado para importar.');
+    return;
+  }
+
+  const btn = document.querySelector('button[onclick="confirmImport()"]');
+  btn.textContent = 'Importando...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/import/confirm', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ user_id: USER_ID, year: YEAR, month: MONTH, records })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      const msg = document.getElementById('result-msg');
+      msg.style.display = 'block';
+      msg.innerHTML = `<div class="alert alert-success">
+        ✓ ${data.imported} dia${data.imported !== 1 ? 's' : ''} importado${data.imported !== 1 ? 's' : ''}
+        ${data.skipped > 0 ? `, ${data.skipped} pulado${data.skipped !== 1 ? 's' : ''}` : ''}.
+        <a href="/registro?year=${YEAR}&month=${MONTH}" style="color:var(--green);font-weight:500;margin-left:8px">Ver registro →</a>
+      </div>`;
+      btn.style.display = 'none';
+    }
+  } catch(e) {
+    btn.textContent = 'Confirmar importação';
+    btn.disabled = false;
+    alert('Erro ao importar. Tente novamente.');
+  }
+}
+</script>
+{% endblock %}

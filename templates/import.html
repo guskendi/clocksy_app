@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block title %}Importar horas — Clocksy{% endblock %}
+{% block body %}
+<div class="container">
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="alert alert-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <div style="margin-bottom:20px">
+    {% if is_admin %}
+    <a href="{{ url_for('admin_dashboard') }}" style="color:var(--text2);font-size:13px">← Voltar</a>
+    {% else %}
+    <a href="{{ url_for('registro') }}" style="color:var(--text2);font-size:13px">← Voltar</a>
+    {% endif %}
+    <h2 style="font-size:18px;font-weight:500;margin-top:8px">Importar horas</h2>
+    <p style="font-size:13px;color:var(--text2);margin-top:4px">
+      Envie uma foto do controle de ponto ou uma planilha Excel.<br>
+      O sistema extrai os horários automaticamente para conferência.
+    </p>
+  </div>
+
+  <form method="POST" enctype="multipart/form-data">
+
+    {% if is_admin %}
+    <div class="card card-sm" style="margin-bottom:14px">
+      <p class="section-title" style="margin-bottom:10px">Usuário</p>
+      <select name="uid" class="form-input" required>
+        <option value="">— selecione o usuário —</option>
+        {% for u in users %}
+        <option value="{{ u.id }}" {{ 'selected' if u.id == uid }}>{{ u.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% else %}
+    <input type="hidden" name="uid" value="{{ current_user.id }}">
+    {% endif %}
+
+    <div class="card card-sm" style="margin-bottom:14px">
+      <p class="section-title" style="margin-bottom:10px">Mês de referência</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label class="form-label">Mês</label>
+          <select name="month" class="form-input">
+            {% for m in range(1,13) %}
+            <option value="{{ m }}" {{ 'selected' if m == month }}>{{ month_names[m] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Ano</label>
+          <select name="year" class="form-input">
+            {% for y in range(today.year-2, today.year+1) %}
+            <option value="{{ y }}" {{ 'selected' if y == year }}>{{ y }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card card-sm" style="margin-bottom:20px">
+      <p class="section-title" style="margin-bottom:10px">Arquivo</p>
+      <div id="drop-zone" style="border:1.5px dashed var(--border);border-radius:var(--radius-sm);padding:32px 16px;text-align:center;cursor:pointer;transition:border-color .15s"
+           onclick="document.getElementById('file-input').click()"
+           ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+           ondragleave="this.style.borderColor='var(--border)'"
+           ondrop="handleDrop(event)">
+        <div style="font-size:28px;margin-bottom:8px">📎</div>
+        <p style="font-size:14px;font-weight:500;margin-bottom:4px">Clique ou arraste o arquivo aqui</p>
+        <p style="font-size:12px;color:var(--text2)">Imagem (JPG, PNG) ou planilha Excel (.xlsx)</p>
+        <p id="file-name" style="font-size:13px;color:var(--accent);margin-top:10px;display:none"></p>
+      </div>
+      <input type="file" id="file-input" name="file" accept=".jpg,.jpeg,.png,.webp,.xlsx,.xls"
+             style="display:none" onchange="showFileName(this)">
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">
+      Processar arquivo
+    </button>
+  </form>
+
+  <div style="margin-top:20px;padding:12px 14px;background:var(--surface2);border-radius:var(--radius-sm)">
+    <p style="font-size:12px;color:var(--text2);line-height:1.7">
+      <strong>Imagem:</strong> foto de folha de ponto, print de tela ou qualquer imagem com os horários.<br>
+      <strong>Excel:</strong> planilha com colunas de dia, entrada e saída. O sistema detecta as colunas automaticamente.
+    </p>
+  </div>
+</div>
+
+<script>
+function showFileName(input) {
+  const el = document.getElementById('file-name');
+  if (input.files[0]) {
+    el.textContent = '✓ ' + input.files[0].name;
+    el.style.display = 'block';
+  }
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').style.borderColor = 'var(--border)';
+  const dt = e.dataTransfer;
+  if (dt.files[0]) {
+    const input = document.getElementById('file-input');
+    input.files = dt.files;
+    showFileName(input);
+  }
+}
+</script>
+{% endblock %}

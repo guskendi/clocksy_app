@@ -7,6 +7,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from flask_migrate import Migrate
 from dotenv import load_dotenv
 from models import db, User, UserConfig, DayRecord
+from importer import import_from_excel, import_from_image
 from utils import (
     get_user_config, calc_worked_minutes, compute_month_summary,
     get_day_target_minutes, get_day_default_schedule,
@@ -37,6 +38,15 @@ migrate = Migrate(app, db)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Faça login para continuar.'
+
+def admin_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.is_admin:
+            abort(403)
+        return f(*args, **kwargs)
+    return decorated
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -456,16 +466,209 @@ def config():
     )
 
 
-# ─── ADMIN ────────────────────────────────────────────────────────────────────
+# ─── IMPORTAÇÃO DE HORAS ─────────────────────────────────────────────────────
 
-def admin_required(f):
-    from functools import wraps
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if not current_user.is_authenticated or not current_user.is_admin:
+ALLOWED_IMAGE_TYPES = {
+    'image/jpeg': 'image/jpeg',
+    'image/jpg':  'image/jpeg',
+    'image/png':  'image/png',
+    'image/webp': 'image/webp',
+}
+ALLOWED_EXCEL_TYPES = {
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-excel',
+}
+
+def _get_mime(filename, file_bytes):
+    ext = filename.rsplit('.', 1)[-1].lower()
+    if ext in ('jpg', 'jpeg'):  return 'image/jpeg'
+    if ext == 'png':            return 'image/png'
+    if ext == 'webp':           return 'image/webp'
+    if ext in ('xlsx', 'xls'): return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    return 'application/octet-stream'
+
+@app.route('/import', methods=['GET', 'POST'])
+@login_required
+def import_hours():
+    if current_user.is_admin:
+        return redirect(url_for('admin_import'))
+
+    today = date.today()
+    year  = int(request.args.get('year',  today.year))
+    month = int(request.args.get('month', today.month))
+    month_names = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+
+    if request.method == 'POST':
+        f = request.files.get('file')
+        if not f or not f.filename:
+            flash('Selecione um arquivo.', 'error')
+            return redirect(request.url)
+
+        file_bytes = f.read()
+        mime = _get_mime(f.filename, file_bytes)
+
+        try:
+            if mime in ALLOWED_IMAGE_TYPES:
+                records = import_from_image(file_bytes, ALLOWED_IMAGE_TYPES[mime], year, month)
+            else:
+                records = import_from_excel(file_bytes, year, month)
+        except Exception as e:
+            flash(f'Erro ao processar arquivo: {str(e)}', 'error')
+            return redirect(request.url)
+
+        if not records:
+            flash('Nenhum registro encontrado no arquivo.', 'error')
+            return redirect(request.url)
+
+        # Verifica conflitos
+        existing = {r.record_date.day: r for r in
+                    DayRecord.query.filter_by(user_id=current_user.id).filter(
+                        DayRecord.record_date >= date(year, month, 1),
+                        DayRecord.record_date <= date(year, month, 28)
+                    ).all()}
+
+        preview = []
+        for rec in records:
+            conflict = rec['day'] in existing and (
+                existing[rec['day']].entry_time or existing[rec['day']].exit_time
+            )
+            preview.append({**rec, 'conflict': conflict})
+
+        return render_template('import_preview.html',
+            preview=preview, year=year, month=month,
+            month_name=month_names[month],
+            existing=existing,
+            user_id=current_user.id,
+        )
+
+    return render_template('import.html',
+        year=year, month=month,
+        month_name=month_names[month],
+        month_names=month_names, today=today,
+        is_admin=False,
+    )
+
+@app.route('/admin/import', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def admin_import():
+    today = date.today()
+    year  = int(request.args.get('year',  today.year))
+    month = int(request.args.get('month', today.month))
+    uid   = int(request.args.get('uid', 0))
+    month_names = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+    users = User.query.filter_by(is_admin=False, is_active=True).order_by(User.name).all()
+
+    if request.method == 'POST':
+        uid   = int(request.form.get('uid', 0))
+        year  = int(request.form.get('year',  today.year))
+        month = int(request.form.get('month', today.month))
+        target_user = User.query.get_or_404(uid)
+
+        f = request.files.get('file')
+        if not f or not f.filename:
+            flash('Selecione um arquivo.', 'error')
+            return redirect(request.url)
+
+        file_bytes = f.read()
+        mime = _get_mime(f.filename, file_bytes)
+
+        try:
+            if mime in ALLOWED_IMAGE_TYPES:
+                records = import_from_image(file_bytes, ALLOWED_IMAGE_TYPES[mime], year, month)
+            else:
+                records = import_from_excel(file_bytes, year, month)
+        except Exception as e:
+            flash(f'Erro ao processar arquivo: {str(e)}', 'error')
+            return redirect(request.url)
+
+        if not records:
+            flash('Nenhum registro encontrado no arquivo.', 'error')
+            return redirect(request.url)
+
+        existing = {r.record_date.day: r for r in
+                    DayRecord.query.filter_by(user_id=uid).filter(
+                        DayRecord.record_date >= date(year, month, 1),
+                        DayRecord.record_date <= date(year, month, 28)
+                    ).all()}
+
+        preview = []
+        for rec in records:
+            conflict = rec['day'] in existing and (
+                existing[rec['day']].entry_time or existing[rec['day']].exit_time
+            )
+            preview.append({**rec, 'conflict': conflict})
+
+        return render_template('import_preview.html',
+            preview=preview, year=year, month=month,
+            month_name=month_names[month],
+            existing=existing,
+            user_id=uid,
+            target_user=target_user,
+        )
+
+    return render_template('import.html',
+        year=year, month=month,
+        month_name=month_names[month],
+        month_names=month_names, today=today,
+        users=users, uid=uid,
+        is_admin=True,
+    )
+
+@app.route('/api/import/confirm', methods=['POST'])
+@login_required
+def confirm_import():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    year    = data.get('year')
+    month   = data.get('month')
+    records = data.get('records', [])  # [{day, entry, lunch_out, lunch_in, exit, action}]
+    # action: 'import' | 'skip'
+
+    # Valida permissão
+    if current_user.is_admin:
+        target = User.query.get_or_404(user_id)
+    else:
+        if user_id != current_user.id:
             abort(403)
-        return f(*args, **kwargs)
-    return decorated
+        target = current_user
+
+    imported = 0
+    skipped  = 0
+
+    for rec in records:
+        if rec.get('action') == 'skip':
+            skipped += 1
+            continue
+        day = rec['day']
+        try:
+            record_date = date(year, month, day)
+        except ValueError:
+            continue
+
+        existing = DayRecord.query.filter_by(
+            user_id=target.id, record_date=record_date
+        ).first()
+
+        if not existing:
+            existing = DayRecord(user_id=target.id, record_date=record_date)
+            db.session.add(existing)
+
+        existing.entry_time     = rec.get('entry') or None
+        existing.lunch_out_time = rec.get('lunch_out') or None
+        existing.lunch_in_time  = rec.get('lunch_in') or None
+        existing.exit_time      = rec.get('exit') or None
+        existing.confirmed      = True
+        existing.updated_at     = datetime.utcnow()
+        imported += 1
+
+    db.session.commit()
+    return jsonify({'ok': True, 'imported': imported, 'skipped': skipped})
+
+
+# ─── ADMIN ────────────────────────────────────────────────────────────────────
 
 @app.route('/admin')
 @login_required
