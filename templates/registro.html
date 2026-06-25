@@ -229,6 +229,12 @@
 <script>
 const PAGE_YEAR = {{ year }};
 const PAGE_MONTH = {{ month }};
+const SHOW_POPUP = {{ 'true' if request.args.get('popup') == '1' else 'false' }};
+const TODAY_STR  = '{{ today.strftime("%Y-%m-%d") }}';
+
+window.addEventListener('DOMContentLoaded', () => {
+  if (SHOW_POPUP) openPontoPopup(TODAY_STR);
+});
 
 async function refreshTotals() {
   try {

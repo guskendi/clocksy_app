@@ -352,6 +352,37 @@ select.form-input { cursor: pointer; }
 {% endif %}
 {% block body %}{% endblock %}
 
+<!-- MODAL PONTO RÁPIDO -->
+<div class="modal-overlay" id="modal-ponto">
+  <div class="modal">
+    <p class="modal-title">☀ Bom dia! Bater ponto de hoje?</p>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px" id="modal-ponto-date"></p>
+    <input type="hidden" id="modal-ponto-datestr">
+
+    <div class="form-group">
+      <label class="form-label">Entrada</label>
+      <input type="time" class="form-input" id="popup-entry">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Saída almoço</label>
+      <input type="time" class="form-input" id="popup-lunch-out">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Retorno almoço</label>
+      <input type="time" class="form-input" id="popup-lunch-in">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Saída <span style="color:var(--text3)">(opcional — preencha ao sair)</span></label>
+      <input type="time" class="form-input" id="popup-exit">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closePontoPopup()">Agora não</button>
+      <button class="btn btn-primary" onclick="savePontoPopup()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL JUSTIFICATIVA -->
 <div class="modal-overlay" id="modal-just">
   <div class="modal">
@@ -612,6 +643,71 @@ function updateDayCard(dateStr, data) {
 document.getElementById('modal-just').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
+
+document.getElementById('modal-ponto').addEventListener('click', function(e) {
+  if (e.target === this) closePontoPopup();
+});
+
+function openPontoPopup(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const dias = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+  const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  document.getElementById('modal-ponto-date').textContent =
+    `${dias[d.getDay()]}, ${d.getDate()} de ${meses[d.getMonth()]}`;
+  document.getElementById('modal-ponto-datestr').value = dateStr;
+
+  // Preenche horário padrão de entrada com hora atual se for manhã
+  const now = new Date();
+  const hhmm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  document.getElementById('popup-entry').value = hhmm;
+  document.getElementById('popup-lunch-out').value = '';
+  document.getElementById('popup-lunch-in').value = '';
+  document.getElementById('popup-exit').value = '';
+
+  document.getElementById('modal-ponto').classList.add('open');
+}
+
+function closePontoPopup() {
+  document.getElementById('modal-ponto').classList.remove('open');
+}
+
+async function savePontoPopup() {
+  const dateStr   = document.getElementById('modal-ponto-datestr').value;
+  const entry     = document.getElementById('popup-entry').value;
+  const lunch_out = document.getElementById('popup-lunch-out').value;
+  const lunch_in  = document.getElementById('popup-lunch-in').value;
+  const exit_t    = document.getElementById('popup-exit').value;
+
+  if (!entry) {
+    alert('Preencha pelo menos o horário de entrada.');
+    return;
+  }
+
+  const res = await fetch('/api/record', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      date: dateStr,
+      entry_time:     entry,
+      lunch_out_time: lunch_out || null,
+      lunch_in_time:  lunch_in  || null,
+      exit_time:      exit_t    || null,
+    })
+  });
+  const data = await res.json();
+
+  // Atualiza o card do dia na página se estiver visível
+  if (document.getElementById('entry-' + dateStr)) {
+    document.getElementById('entry-' + dateStr).value = entry;
+    if (lunch_out) document.getElementById('lunch_out-' + dateStr).value = lunch_out;
+    if (lunch_in)  document.getElementById('lunch_in-'  + dateStr).value = lunch_in;
+    if (exit_t)    document.getElementById('exit-'      + dateStr).value = exit_t;
+    updateDayResult(dateStr, data);
+    if (typeof refreshTotals === 'function') refreshTotals();
+  }
+
+  closePontoPopup();
+}
 </script>
 </body>
 </html>

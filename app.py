@@ -59,7 +59,19 @@ def login():
                 return redirect(url_for('admin_dashboard'))
             if user.must_change_password:
                 return redirect(url_for('change_password'))
-            return redirect(url_for('registro'))
+            # Verifica se precisa mostrar popup de ponto
+            from datetime import date as date_cls
+            _today = date_cls.today()
+            _cfg = get_user_config(user)
+            _wd_sun = (_today.weekday() + 1) % 7
+            _show_popup = False
+            if _wd_sun in _cfg['work_days']:
+                _rec = DayRecord.query.filter_by(
+                    user_id=user.id, record_date=_today
+                ).first()
+                if not _rec or (not _rec.entry_time and not _rec.justification_type):
+                    _show_popup = True
+            return redirect(url_for('registro', popup='1' if _show_popup else '0'))
         flash('E-mail ou senha incorretos.', 'error')
     return render_template('login.html')
 
