@@ -23,6 +23,13 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-change-me')
 _db_url = os.environ.get('DATABASE_URL', 'sqlite:///clocksy.db')
 app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_pre_ping': True,      # testa a conexão antes de usar
+    'pool_recycle': 300,        # descarta conexões após 5 minutos
+    'pool_timeout': 20,
+    'pool_size': 5,
+    'max_overflow': 2,
+}
 
 db.init_app(app)
 migrate = Migrate(app, db)
