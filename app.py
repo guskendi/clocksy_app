@@ -494,8 +494,13 @@ def import_hours():
         return redirect(url_for('admin_import'))
 
     today = date.today()
-    year  = int(request.args.get('year',  today.year))
-    month = int(request.args.get('month', today.month))
+    # GET usa query string, POST usa form
+    if request.method == 'POST':
+        year  = int(request.form.get('year',  today.year))
+        month = int(request.form.get('month', today.month))
+    else:
+        year  = int(request.args.get('year',  today.year))
+        month = int(request.args.get('month', today.month))
     month_names = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                    'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
